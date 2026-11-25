@@ -86,7 +86,7 @@ The running service publishes OpenAPI at `/v3/api-docs` (JSON) and `/v3/api-docs
 
 The sandbox supplies WABA ID `100000000000001`, phone number ID `100000000000002`, and simple template message ID `20005`. Look them up with `GET /dev/dlt_manager/whatsapp?type=template`. You can create additional templates and retrieve them through the versioned API. Send payloads are included in the email, including template IDs and variables.
 
-The route tests cover 66 HTTP method/path combinations from the [Fast2SMS reference index](https://docs.fast2sms.com/llms.txt). Where the reference shows multiple schemas on a shared route, use the documented body for your type, such as an RCS carousel or a Meta-format WhatsApp template.
+The route tests cover 68 HTTP method/path combinations from the [Fast2SMS reference index](https://docs.fast2sms.com/llms.txt): every documented operation, with the five webhook services counted once per service. Where the reference shows multiple schemas on a shared route, use the documented body for your type, such as an RCS carousel or a Meta-format WhatsApp template.
 
 The email queue retries failed sends up to five attempts. Delivery and voice reports use sandbox email outcomes. Sent means Gmail SMTP accepted the email. A service interruption after SMTP accepts an email can result in a duplicate on retry. The sandbox uses a fixed wallet balance, locally approved templates, sample voice files and simulated carrier outcomes. Webhook configurations persist locally. QR responses include an authenticated image URL for the requested PNG or SVG, and the QR links to a local record.
 
