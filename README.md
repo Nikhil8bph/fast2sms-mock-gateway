@@ -1,6 +1,6 @@
 # Fast2SMS sandbox
 
-**For local development and testing only.** FastAPI support and replacement of FastAPI or the official Fast2SMS service are outside this project's scope. Fast2SMS references describe the HTTP behavior simulated by this independent Spring Boot sandbox.
+**Intended for development and testing.** This independent Spring Boot sandbox simulates Fast2SMS API behavior. It is not affiliated with Fast2SMS and does not claim to replace FastAPI or the official Fast2SMS service.
 
 For development that requires live delivery and for production, use the official Fast2SMS service. [Fast2SMS website](https://www.fast2sms.com/) · [Fast2SMS API reference](https://docs.fast2sms.com/reference/)
 
@@ -98,4 +98,4 @@ The Direct Send route uses sandbox fields `phone_number_id`, `category=utility`,
 
 ## License
 
-Use is limited to local development and testing under the [Local Development License](LICENSE).
+This project is open source under the [MIT License](LICENSE). For licensing questions or objections, contact [nikhil8.jsg@gmail.com](mailto:nikhil8.jsg@gmail.com).
