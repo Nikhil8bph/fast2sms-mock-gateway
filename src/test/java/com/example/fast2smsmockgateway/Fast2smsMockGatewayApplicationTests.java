@@ -13,6 +13,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -20,11 +21,15 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.springframework.web.util.ServletRequestPathUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.matchesPattern;
@@ -509,6 +514,114 @@ class Fast2smsMockGatewayApplicationTests {
         org.flywaydb.core.Flyway.configure().dataSource(url, "sa", "").load().migrate();
         assertThat(previous.queryForObject("SELECT last_sent_at FROM sandbox_otp_challenge WHERE id = ?",
                 java.sql.Timestamp.class, account + ":" + mobile)).isEqualTo(resent);
+    }
+
+
+    @Test
+    void swaggerDocumentsEveryGatewayRouteAndItsRequestMediaTypes() throws Exception {
+        mvc.perform(get("/swagger-ui.html")).andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", "/swagger-ui/index.html"));
+        mvc.perform(get("/swagger-ui/index.html")).andExpect(status().isOk());
+        mvc.perform(get("/v3/api-docs.yaml")).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("fast2smsKey")));
+        mvc.perform(get("/v3/api-docs/swagger-config")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value("/v3/api-docs"));
+
+        String result = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.openapi").value(startsWith("3.1.")))
+                .andExpect(jsonPath("$.servers[0].url").value("/"))
+                .andExpect(jsonPath("$.components.securitySchemes.fast2smsKey.name").value("Authorization"))
+                .andExpect(jsonPath("$.components.securitySchemes.fast2smsKey.in").value("header"))
+                .andExpect(jsonPath("$.components.securitySchemes.fast2smsKey.type").value("apiKey"))
+                .andExpect(jsonPath("$.security[0].fast2smsKey").isArray())
+                .andExpect(jsonPath("$.paths['/health'].get.security").isEmpty())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode spec = json.readTree(result);
+        Set<String> expected = new HashSet<>();
+        mappings.getHandlerMethods().forEach((mapping, handler) -> {
+            if (handler.getBeanType().getPackageName().endsWith(".controller")) {
+                mapping.getPatternValues().forEach(pattern -> mapping.getMethodsCondition().getMethods()
+                        .forEach(method -> expected.add(method.name() + " " + pattern)));
+            }
+        });
+        Set<String> actual = new HashSet<>();
+        Set<String> operationIds = new HashSet<>();
+        for (var resource : spec.path("paths").properties()) {
+            for (var entry : resource.getValue().properties()) {
+                if (!Set.of("get", "post", "put", "delete").contains(entry.getKey())) {
+                    continue;
+                }
+                JsonNode operation = entry.getValue();
+                assertThat(operationIds.add(operation.path("operationId").asString())).isTrue();
+                assertThat(operation.path("responses").has("200")).as(resource.getKey()).isTrue();
+                boolean secured = resource.getKey().startsWith("/dev/");
+                assertThat(operation.path("responses").has("401")).as(resource.getKey()).isEqualTo(secured);
+                if ("get".equals(entry.getKey())) {
+                    assertThat(operation.has("requestBody")).as(resource.getKey()).isFalse();
+                }
+                for (String concretePath : documentedPaths(spec, resource.getKey(),
+                        resource.getValue().path("parameters"))) {
+                    verifyDocumentedMapping(concretePath, entry.getKey(), operation, actual);
+                }
+            }
+        }
+        assertThat(actual).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(spec.at("/paths/~1dev~1whatsapp~1{version}~1{phone_number_id}~1block_users/delete/requestBody")
+                .isObject()).isTrue();
+        JsonNode importMedia = spec.at("/paths/~1dev~1dlt_manager~1add_template_excel/post/requestBody/content");
+        assertThat(importMedia.has("application/json")).isTrue();
+        assertThat(importMedia.has("multipart/form-data")).isTrue();
+    }
+
+    @Test
+    void swaggerQuickSmsExampleIsAnExecutableRequest() throws Exception {
+        String result = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode payload = json.readTree(result).at(
+                "/paths/~1dev~1bulkV2/post/requestBody/content/application~1json/examples/quick/value");
+        assertThat(payload.isObject()).isTrue();
+        mvc.perform(post("/dev/bulkV2").header("Authorization", KEY)
+                        .contentType(MediaType.APPLICATION_JSON).content(payload.toString()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.return").value(true));
+    }
+
+    private List<String> documentedPaths(JsonNode spec, String path, JsonNode parameters) {
+        List<String> paths = List.of(path);
+        for (JsonNode parameter : parameters) {
+            JsonNode declaration = parameter.has("$ref")
+                    ? spec.at(parameter.path("$ref").asString().substring(1)) : parameter;
+            assertThat(declaration.path("in").asString()).isEqualTo("path");
+            assertThat(declaration.path("required").asBoolean()).isTrue();
+            String name = "{" + declaration.path("name").asString() + "}";
+            JsonNode schema = declaration.path("schema");
+            var values = new ArrayList<String>();
+            if (schema.has("enum")) {
+                schema.path("enum").forEach(value -> values.add(value.asString()));
+            } else {
+                values.add(schema.path("example").asString());
+            }
+            paths = paths.stream().flatMap(value -> values.stream().map(item -> value.replace(name, item))).toList();
+        }
+        paths.forEach(value -> assertThat(value).doesNotContain("{", "}"));
+        return paths;
+    }
+
+    private void verifyDocumentedMapping(String path, String method, JsonNode operation, Set<String> actual)
+            throws Exception {
+        String httpMethod = method.toUpperCase(java.util.Locale.ROOT);
+        Set<String> mediaTypes = new HashSet<>();
+        operation.path("requestBody").path("content").properties()
+                .forEach(media -> mediaTypes.add(media.getKey()));
+        if (mediaTypes.isEmpty()) {
+            mediaTypes.add(MediaType.APPLICATION_JSON_VALUE);
+        }
+        for (String mediaType : mediaTypes) {
+            var request = new MockHttpServletRequest(httpMethod, path);
+            request.setContentType(mediaType);
+            ServletRequestPathUtils.parseAndCache(request);
+            assertThat(mappings.getHandler(request)).as(httpMethod + " " + path + " " + mediaType).isNotNull();
+            actual.add(httpMethod + " " + request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE));
+        }
     }
 
 

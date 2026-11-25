@@ -50,3 +50,12 @@ sandbox:
   dlt-excel-origin: "${DLT_EXCEL_ORIGIN:}"
   otp-verify-attempts: "${OTP_VERIFY_ATTEMPTS:10}"
   otp-resend-wait-seconds: "${OTP_RESEND_WAIT_SECONDS:10}"
+
+springdoc:
+  api-docs:
+    version: openapi_3_1
+  swagger-ui:
+    disable-swagger-default-url: true
+    doc-expansion: none
+    filter: true
+    persist-authorization: false

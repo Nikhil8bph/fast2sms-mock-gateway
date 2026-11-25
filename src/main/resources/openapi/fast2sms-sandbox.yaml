@@ -1,0 +1,4443 @@
+openapi: "3.1.0"
+info:
+  title: Fast2SMS Sandbox API
+  version: "1.0"
+  description: "Independent development and testing gateway. Accepted messaging requests are queued for email delivery. Use **Authorize** with a configured sandbox key and enter the key exactly as supplied. Requests that write state, including the GET send endpoints, can queue email. Use sandbox data in the examples."
+externalDocs:
+  description: Official Fast2SMS API reference
+  url: "https://docs.fast2sms.com/reference/"
+servers:
+  - url: "/"
+    description: Current sandbox host
+tags:
+  - name: SMS
+  - name: Smart OTP
+  - name: WhatsApp messages
+  - name: Reports and wallet
+  - name: RCS
+  - name: Voice
+  - name: DLT Manager
+  - name: WhatsApp account and templates
+  - name: WhatsApp media and QR
+  - name: Webhook configuration
+  - name: Health
+security:
+  - fast2smsKey: []
+paths:
+  /dev/bulkV2:
+    get:
+      tags: [SMS]
+      operationId: sendSmsQuery
+      summary: Send SMS with query parameters
+      description: Quick and DLT Manual SMS use message text. DLT SMS uses a message ID and may include variables_values. Classic OTP uses variables_values for the code. DLT routes require sender_id. DLT Manual may resolve missing IDs from a unique saved template.
+      parameters:
+        - name: route
+          in: query
+          required: true
+          schema:
+            type: string
+            description: SMS route.
+            example: q
+            enum: [q, dlt, dlt_manual, otp]
+        - name: numbers
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Comma-separated Indian mobile numbers.
+            example: "9999999999"
+        - name: message
+          in: query
+          schema:
+            type: string
+            description: "Quick SMS text, full DLT Manual text, or the Fast2SMS DLT message ID."
+            example: Hello from the sandbox
+        - name: sender_id
+          in: query
+          schema:
+            type: string
+            description: DLT sender ID.
+            example: TESTER
+        - name: entity_id
+          in: query
+          schema:
+            type: string
+            description: DLT principal entity ID.
+        - name: template_id
+          in: query
+          schema:
+            type: string
+            description: DLT template ID.
+        - name: variables_values
+          in: query
+          schema:
+            type: string
+            description: Pipe-delimited template values.
+            example: "Sandbox|123456"
+        - name: schedule_time
+          in: query
+          schema:
+            type: string
+            description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        - name: sms_details
+          in: query
+          schema:
+            type: string
+            description: Set to 1 to include message details.
+            example: "1"
+            enum: ["1"]
+        - name: udf1
+          in: query
+          schema:
+            type: string
+            description: First tracking value
+        - name: udf2
+          in: query
+          schema:
+            type: string
+            description: Second tracking value
+        - name: udf3
+          in: query
+          schema:
+            type: string
+            description: Third tracking value
+      responses:
+        "200":
+          $ref: "#/components/responses/SmsAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    post:
+      tags: [SMS]
+      operationId: sendSms
+      summary: "Send Quick, DLT, DLT Manual, or classic OTP SMS"
+      description: Quick and DLT Manual SMS use message text. DLT SMS uses a message ID and may include variables_values. Classic OTP uses variables_values for the code. DLT routes require sender_id. DLT Manual may resolve missing IDs from a unique saved template.
+      requestBody:
+        description: SMS payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/QuickSmsRequest"
+                - $ref: "#/components/schemas/DltSmsRequest"
+                - $ref: "#/components/schemas/DltManualSmsRequest"
+                - $ref: "#/components/schemas/ClassicOtpSmsRequest"
+            examples:
+              quick:
+                summary: Quick SMS
+                value:
+                  route: q
+                  numbers: "9999999999"
+                  message: Hello from the sandbox
+              dlt:
+                summary: DLT template
+                value:
+                  route: dlt
+                  numbers: "9999999999"
+                  sender_id: TESTER
+                  message: "10001"
+                  variables_values: Sandbox
+              manual:
+                summary: DLT Manual
+                value:
+                  route: dlt_manual
+                  numbers: "9999999999"
+                  sender_id: TESTER
+                  message: Order 112 is ready.
+                  template_id: "2001003001"
+                  entity_id: "2001002001"
+              otp:
+                summary: Classic OTP
+                value:
+                  route: otp
+                  numbers: "9999999999"
+                  variables_values: "012345"
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [route, numbers]
+              properties:
+                route:
+                  type: string
+                  description: SMS route.
+                  example: q
+                  enum: [q, dlt, dlt_manual, otp]
+                numbers:
+                  type: string
+                  description: Comma-separated Indian mobile numbers.
+                  example: "9999999999"
+                message:
+                  type: string
+                  description: "Quick SMS text, full DLT Manual text, or the Fast2SMS DLT message ID."
+                  example: Hello from the sandbox
+                sender_id:
+                  type: string
+                  description: DLT sender ID.
+                  example: TESTER
+                entity_id:
+                  type: string
+                  description: DLT principal entity ID.
+                template_id:
+                  type: string
+                  description: DLT template ID.
+                variables_values:
+                  type: string
+                  description: Pipe-delimited template values.
+                  example: "Sandbox|123456"
+                schedule_time:
+                  type: string
+                  description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+                sms_details:
+                  type: string
+                  description: Set to 1 to include message details.
+                  example: "1"
+                  enum: ["1"]
+                udf1:
+                  type: string
+                  description: First tracking value
+                udf2:
+                  type: string
+                  description: Second tracking value
+                udf3:
+                  type: string
+                  description: Third tracking value
+      responses:
+        "200":
+          $ref: "#/components/responses/SmsAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/custom:
+    post:
+      tags: [SMS]
+      operationId: sendSmsBatch
+      summary: Send a batch of SMS requests
+      description: "Supply the sender ID in each DLT item. For DLT Manual, include entity_id and template_id on every item. Items with different schedules get separate emails under the same request ID."
+      requestBody:
+        description: Batch payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SmsBatchRequest"
+            example:
+              route: q
+              requests:
+                - numbers: "9999999999"
+                  message: First message
+                - numbers: "9999999998"
+                  message: Second message
+      responses:
+        "200":
+          $ref: "#/components/responses/Accepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/otp/send:
+    post:
+      tags: [Smart OTP]
+      operationId: sendSmartOtp
+      summary: Send a Smart OTP
+      description: A new send replaces the previous code for the number. The sandbox emails the code to the configured inbox.
+      requestBody:
+        description: Smart OTP payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendOtpRequest"
+            example:
+              mobile: "9999999999"
+              otp_id: sandbox-otp
+              otp_expiry: 5
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/SendOtpRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/OtpSent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    get:
+      tags: [Smart OTP]
+      operationId: sendSmartOtpQuery
+      summary: Send a Smart OTP with query parameters
+      description: A new send replaces the previous code for the number. The sandbox emails the code to the configured inbox.
+      parameters:
+        - name: mobile
+          in: query
+          required: true
+          schema:
+            type: string
+            description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+            example: "9999999999"
+        - name: otp_id
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Sandbox OTP template ID.
+            example: sandbox-otp
+        - name: otp
+          in: query
+          schema:
+            type: string
+            description: Optional test code. Supply a string to retain leading zeros.
+            example: "012345"
+            maxLength: 10
+        - name: otp_length
+          in: query
+          schema:
+            type: integer
+            description: Generated code length.
+            example: 6
+            minimum: 4
+            maximum: 10
+            default: 6
+        - name: otp_expiry
+          in: query
+          schema:
+            type: integer
+            description: Minutes of validity.
+            example: 15
+            minimum: 1
+            maximum: 10080
+            default: 15
+        - name: variables_values
+          in: query
+          schema:
+            type: string
+            description: Pipe-delimited template values.
+            example: "Sandbox|123456"
+        - name: udf1
+          in: query
+          schema:
+            type: string
+            description: First tracking value
+        - name: udf2
+          in: query
+          schema:
+            type: string
+            description: Second tracking value
+        - name: udf3
+          in: query
+          schema:
+            type: string
+            description: Third tracking value
+      responses:
+        "200":
+          $ref: "#/components/responses/OtpSent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/otp/verify:
+    post:
+      tags: [Smart OTP]
+      operationId: verifySmartOtp
+      summary: Verify a Smart OTP
+      description: "Verify the latest unused code. Invalid, expired, and exhausted codes are reported separately."
+      requestBody:
+        description: Smart OTP payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyOtpRequest"
+            example:
+              mobile: "9999999999"
+              otp: "012345"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/VerifyOtpRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/OtpVerified"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    get:
+      tags: [Smart OTP]
+      operationId: verifySmartOtpQuery
+      summary: Verify a Smart OTP with query parameters
+      description: "Verify the latest unused code. Invalid, expired, and exhausted codes are reported separately."
+      parameters:
+        - name: mobile
+          in: query
+          required: true
+          schema:
+            type: string
+            description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+            example: "9999999999"
+        - name: otp
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Code from the sandbox email.
+            example: "012345"
+      responses:
+        "200":
+          $ref: "#/components/responses/OtpVerified"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/otp/resend:
+    post:
+      tags: [Smart OTP]
+      operationId: resendSmartOtp
+      summary: Resend a Smart OTP
+      description: Reuse the latest code and restart its expiry. The resend window and cooldown still apply.
+      requestBody:
+        description: Smart OTP payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendOtpRequest"
+            example:
+              mobile: "9999999999"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/ResendOtpRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/OtpSent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    get:
+      tags: [Smart OTP]
+      operationId: resendSmartOtpQuery
+      summary: Resend a Smart OTP with query parameters
+      description: Reuse the latest code and restart its expiry. The resend window and cooldown still apply.
+      parameters:
+        - name: mobile
+          in: query
+          required: true
+          schema:
+            type: string
+            description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+            example: "9999999999"
+      responses:
+        "200":
+          $ref: "#/components/responses/OtpSent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp:
+    get:
+      tags: [WhatsApp messages]
+      operationId: sendWhatsAppTemplateQuery
+      summary: Send a WhatsApp template with query parameters
+      parameters:
+        - name: message_id
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Numeric Fast2SMS template message ID.
+            example: "20005"
+        - name: phone_number_id
+          in: query
+          schema:
+            type: string
+            description: Optional sender phone number ID.
+            example: "100000000000002"
+        - name: numbers
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Comma-separated Indian mobile numbers.
+            example: "9999999999"
+        - name: variables_values
+          in: query
+          schema:
+            type: string
+            description: Pipe-delimited template values.
+            example: "Sandbox|123456"
+        - name: media_url
+          in: query
+          schema:
+            type: string
+            description: HTTP or HTTPS media URL. The sandbox records it in the payload.
+        - name: document_filename
+          in: query
+          schema:
+            type: string
+            description: Filename for a document header.
+        - name: schedule_time
+          in: query
+          schema:
+            type: string
+            description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        - name: sms_details
+          in: query
+          schema:
+            type: string
+            description: Set to 1 to include message details.
+            example: "1"
+            enum: ["1"]
+        - name: udf1
+          in: query
+          schema:
+            type: string
+            description: First tracking value
+        - name: udf2
+          in: query
+          schema:
+            type: string
+            description: Second tracking value
+        - name: udf3
+          in: query
+          schema:
+            type: string
+            description: Third tracking value
+      responses:
+        "200":
+          $ref: "#/components/responses/Accepted"
+        "400":
+          $ref: "#/components/responses/FieldBadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    post:
+      tags: [WhatsApp messages]
+      operationId: sendWhatsAppTemplate
+      summary: Send a WhatsApp template by message ID
+      requestBody:
+        description: Fast2SMS-style template payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppTemplateRequest"
+            example:
+              message_id: "20005"
+              phone_number_id: "100000000000002"
+              numbers: "9999999999"
+              variables_values: Sandbox
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/WhatsAppTemplateRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Accepted"
+        "400":
+          $ref: "#/components/responses/FieldBadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp-session:
+    post:
+      tags: [WhatsApp messages]
+      operationId: sendWhatsAppSession
+      summary: Send a WhatsApp session message
+      description: Use the flat fields shown in the examples or a nested object named for the message type. The sandbox queues an email for the supplied message.
+      requestBody:
+        description: Session payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppSessionRequest"
+            examples:
+              text:
+                summary: Text
+                value:
+                  phone_number_id: "100000000000002"
+                  to: "9999999999"
+                  type: text
+                  text: Hello from the sandbox
+              image:
+                summary: Image
+                value:
+                  phone_number_id: "100000000000002"
+                  to: "9999999999"
+                  type: image
+                  url: "https://example.test/sandbox.png"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/WhatsAppSessionForm"
+      responses:
+        "200":
+          $ref: "#/components/responses/Accepted"
+        "400":
+          $ref: "#/components/responses/FieldBadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp-direct-send:
+    post:
+      tags: [WhatsApp messages]
+      operationId: sendWhatsAppDirect
+      summary: Send a sandbox utility message
+      description: Sandbox contract for the Direct Send route.
+      requestBody:
+        description: Utility message payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppDirectRequest"
+            example:
+              phone_number_id: "100000000000002"
+              category: utility
+              text: Your sandbox order is ready.
+              numbers: "9999999999"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/WhatsAppDirectRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/Accepted"
+        "400":
+          $ref: "#/components/responses/FieldBadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp/{version}/{phone_number_id}/messages:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/PhoneId"
+    post:
+      tags: [WhatsApp messages]
+      operationId: sendWhatsAppMeta
+      summary: Send a WhatsApp message in Meta format
+      requestBody:
+        description: Meta-style payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/WhatsAppMetaText"
+                - $ref: "#/components/schemas/WhatsAppMetaTemplate"
+                - $ref: "#/components/schemas/WhatsAppMetaAsset"
+            examples:
+              text:
+                summary: Text
+                value:
+                  messaging_product: whatsapp
+                  to: "919999999999"
+                  type: text
+                  text:
+                    body: Hello from the sandbox
+              template:
+                summary: Template
+                value:
+                  messaging_product: whatsapp
+                  to: "919999999999"
+                  type: template
+                  template:
+                    name: sandbox_template
+                    language:
+                      code: en
+              media:
+                summary: Image
+                value:
+                  messaging_product: whatsapp
+                  to: "919999999999"
+                  type: image
+                  image:
+                    link: "https://example.test/image.png"
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppMetaAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/rcs:
+    get:
+      tags: [RCS]
+      operationId: sendRcsQuery
+      summary: "Send a plain, rich, or media RCS message with query parameters"
+      description: "For plain or rich text, include message. Media requires media_url. Carousels use POST JSON with 2 to 10 cards."
+      parameters:
+        - name: bot_id
+          in: query
+          required: true
+          schema:
+            type: string
+            description: RCS bot ID.
+            example: sandbox-bot
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+            example: "9999999999"
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            description: RCS format.
+            example: plain
+            enum: [plain, rich, media]
+        - name: title
+          in: query
+          schema:
+            type: string
+            description: Optional title for a rich card.
+            maxLength: 100
+        - name: message
+          in: query
+          schema:
+            type: string
+            description: Message text.
+            example: Hello from the sandbox
+            maxLength: 3000
+        - name: media_url
+          in: query
+          schema:
+            type: string
+            description: HTTP or HTTPS media URL.
+            example: "https://example.test/image.png"
+        - name: suggestion_type
+          in: query
+          schema:
+            type: string
+            description: Optional action type.
+            enum: [openUrl, dial, viewLocation]
+        - name: suggestion_text
+          in: query
+          schema:
+            type: string
+            description: Action button label.
+            maxLength: 25
+        - name: suggestion_url
+          in: query
+          schema:
+            type: string
+            description: HTTP or HTTPS URL for openUrl.
+        - name: suggestion_phone
+          in: query
+          schema:
+            type: string
+            description: International phone number for dial.
+        - name: latitude
+          in: query
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+        - name: longitude
+          in: query
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+        - name: location_label
+          in: query
+          schema:
+            type: string
+            description: Optional map label.
+        - name: udf1
+          in: query
+          schema:
+            type: string
+            description: First tracking value
+        - name: udf2
+          in: query
+          schema:
+            type: string
+            description: Second tracking value
+        - name: udf3
+          in: query
+          schema:
+            type: string
+            description: Third tracking value
+      responses:
+        "200":
+          $ref: "#/components/responses/Accepted"
+        "400":
+          $ref: "#/components/responses/FieldBadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    post:
+      tags: [RCS]
+      operationId: sendRcs
+      summary: "Send a plain, rich, media, or carousel RCS message"
+      description: "For plain or rich text, include message. Media requires media_url. Carousels use POST JSON with 2 to 10 cards."
+      requestBody:
+        description: RCS payload.
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/RcsPlain"
+                - $ref: "#/components/schemas/RcsRich"
+                - $ref: "#/components/schemas/RcsMedia"
+                - $ref: "#/components/schemas/RcsCarousel"
+            examples:
+              plain:
+                summary: Plain text
+                value:
+                  bot_id: sandbox-bot
+                  to: "9999999999"
+                  type: plain
+                  message: Hello from the sandbox
+              rich:
+                summary: Rich card
+                value:
+                  bot_id: sandbox-bot
+                  to: "9999999999"
+                  type: rich
+                  title: Sandbox
+                  message: Hello from the sandbox
+                  media_url: "https://example.test/image.png"
+              media:
+                summary: Media
+                value:
+                  bot_id: sandbox-bot
+                  to: "9999999999"
+                  type: media
+                  media_url: "https://example.test/image.png"
+              carousel:
+                summary: Carousel
+                value:
+                  bot_id: sandbox-bot
+                  to: "9999999999"
+                  type: carousel
+                  cards:
+                    - title: First
+                      description: Sandbox card one
+                    - title: Second
+                      description: Sandbox card two
+      responses:
+        "200":
+          $ref: "#/components/responses/Accepted"
+        "400":
+          $ref: "#/components/responses/FieldBadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/voice/bulk:
+    post:
+      tags: [Voice]
+      operationId: submitVoiceCampaign
+      summary: Submit a voice campaign
+      requestBody:
+        description: "Simple, key-press, or call-patch campaign payload."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoiceCampaignRequest"
+            example:
+              file_id: "30023"
+              numbers: "9999999999,9999999998"
+              campaign_name: Sandbox test
+              idempotency_key: test-campaign-001
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/VoiceCampaignRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/VoiceCampaignAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /dev/voice/files:
+    get:
+      tags: [Voice]
+      operationId: listVoiceFiles
+      summary: List sandbox voice files
+      responses:
+        "200":
+          $ref: "#/components/responses/VoiceFiles"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /dev/voice/report:
+    get:
+      tags: [Voice]
+      operationId: getVoiceReport
+      summary: Get a voice campaign report
+      parameters:
+        - name: request_id
+          in: query
+          required: true
+          schema:
+            type: string
+            description: ID returned by the voice send route.
+            example: V1234567890abcd
+        - name: numbers
+          in: query
+          schema:
+            type: integer
+            description: Set to 1 for per-number results.
+            example: 1
+            enum: [0, 1]
+        - $ref: "#/components/parameters/Page"
+      responses:
+        "200":
+          $ref: "#/components/responses/VoiceReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /dev/sms_logs:
+    get:
+      tags: [Reports and wallet]
+      operationId: listSmsLogs
+      summary: List SMS delivery logs
+      description: The inclusive date range may span up to 3 days within the last year. Dates are interpreted in Asia/Kolkata.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/SmsLogs"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /dev/sms_summary:
+    get:
+      tags: [Reports and wallet]
+      operationId: getSmsSummary
+      summary: Get SMS delivery counts
+      description: The inclusive date range may span up to 30 days within the last year. Dates are interpreted in Asia/Kolkata.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          $ref: "#/components/responses/SmsSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /dev/whatsapp_logs:
+    get:
+      tags: [Reports and wallet]
+      operationId: listWhatsAppLogs
+      summary: List WhatsApp delivery logs
+      description: The inclusive date range may span up to 3 days within the last year. Dates are interpreted in Asia/Kolkata.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppLogs"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /dev/whatsapp_summary:
+    get:
+      tags: [Reports and wallet]
+      operationId: getWhatsAppSummary
+      summary: Get WhatsApp delivery counts
+      description: The inclusive date range may span up to 30 days within the last year. Dates are interpreted in Asia/Kolkata.
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /dev/dlr/{request_id}:
+    parameters:
+      - $ref: "#/components/parameters/SmsRequestId"
+    get:
+      tags: [Reports and wallet]
+      operationId: getSmsDeliveryReport
+      summary: Get an SMS delivery report
+      description: Looks up a request sent within the last 7 days using the same sandbox key.
+      responses:
+        "200":
+          $ref: "#/components/responses/SmsDelivery"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /dev/whatsapp/{request_id}:
+    parameters:
+      - $ref: "#/components/parameters/WhatsAppRequestId"
+    get:
+      tags: [Reports and wallet]
+      operationId: getWhatsAppDeliveryReport
+      summary: Get a WhatsApp delivery report
+      description: Looks up a request sent within the last 90 days using the same sandbox key.
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppDelivery"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /dev/wallet:
+    post:
+      tags: [Reports and wallet]
+      operationId: getWallet
+      summary: Get the configured sandbox wallet balance
+      responses:
+        "200":
+          $ref: "#/components/responses/Wallet"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /dev/dlt_manager:
+    get:
+      tags: [DLT Manager]
+      operationId: listDltResources
+      summary: List DLT sender IDs or templates
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            description: Resource to list. Sender is used when omitted.
+            example: sender
+            enum: [sender, template]
+      responses:
+        "200":
+          $ref: "#/components/responses/DltList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /dev/dlt_manager/add_entity:
+    post:
+      tags: [DLT Manager]
+      operationId: addDltEntity
+      summary: Add a DLT entity
+      requestBody:
+        description: Sandbox DLT resource.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DltEntity"
+            example:
+              entity_id: "2001002001"
+              entity_name: Sandbox Business
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/dlt_manager/add_sender:
+    post:
+      tags: [DLT Manager]
+      operationId: addDltSender
+      summary: Add a DLT sender ID
+      requestBody:
+        description: Sandbox DLT resource.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DltSender"
+            example:
+              entity_id: "2001002001"
+              sender_id: TESTER
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/dlt_manager/add_template:
+    post:
+      tags: [DLT Manager]
+      operationId: addDltTemplate
+      summary: Add a DLT content template
+      requestBody:
+        description: Sandbox DLT resource.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DltTemplate"
+            example:
+              entity_id: "2001002001"
+              sender_id: [TESTER]
+              template_id: "2001003001"
+              message_text: "Order {#var#} is ready."
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/dlt_manager/add_sender_excel:
+    post:
+      tags: [DLT Manager]
+      operationId: importDltSenders
+      summary: Import DLT sender IDs
+      description: "Upload an XLSX or UTF-8 CSV file as multipart, or submit a hosted URL. Hosted URLs are downloaded from the configured DLT_EXCEL_ORIGIN. With no origin configured, the URL is recorded."
+      requestBody:
+        description: Provide a URL in JSON or upload a local file.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DltSenderImport"
+            example:
+              entity_id: "2001002001"
+              sender_excel: "https://fixtures.example.test/dlt/sender.xlsx"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/DltFileUpload"
+      responses:
+        "200":
+          $ref: "#/components/responses/DltImportResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/dlt_manager/add_template_excel:
+    post:
+      tags: [DLT Manager]
+      operationId: importDltTemplates
+      summary: Import DLT content templates
+      description: "Upload an XLSX or UTF-8 CSV file as multipart, or submit a hosted URL. Hosted URLs are downloaded from the configured DLT_EXCEL_ORIGIN. With no origin configured, the URL is recorded."
+      requestBody:
+        description: Provide a URL in JSON or upload a local file.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DltTemplateImport"
+            example:
+              entity_id: "2001002001"
+              content_excel: "https://fixtures.example.test/dlt/template.xlsx"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/DltFileUpload"
+      responses:
+        "200":
+          $ref: "#/components/responses/DltImportResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/dlt_manager/whatsapp:
+    get:
+      tags: [WhatsApp account and templates]
+      operationId: listWabaDetails
+      summary: Get sandbox WABA details and template IDs
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            description: Choose template to include saved templates.
+            example: template
+            enum: [number, template]
+        - name: phone_number_id
+          in: query
+          schema:
+            type: string
+            description: Filter to a sender phone ID.
+            example: "100000000000002"
+      responses:
+        "200":
+          $ref: "#/components/responses/WabaDetails"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /dev/whatsapp/{version}/{waba_id}/phone_numbers:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/WabaId"
+    get:
+      tags: [WhatsApp account and templates]
+      operationId: listWhatsAppPhones
+      summary: List WhatsApp phone numbers
+      parameters:
+        - $ref: "#/components/parameters/Fields"
+        - name: filtering
+          in: query
+          schema:
+            type: string
+            description: "A JSON array of filters with field, operator, and value. Supported operators are EQUAL and NOT_EQUAL."
+            example: "[{\"field\":\"account_mode\",\"operator\":\"EQUAL\",\"value\":\"SANDBOX\"}]"
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppPhoneList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /dev/whatsapp/{version}/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/WhatsAppObjectId"
+    get:
+      tags: [WhatsApp account and templates]
+      operationId: getWhatsAppObject
+      summary: "Get WhatsApp phone, WABA health, or template information"
+      parameters:
+        - $ref: "#/components/parameters/Fields"
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppObject"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [WhatsApp account and templates]
+      operationId: editWhatsAppTemplate
+      summary: Update a WhatsApp template
+      description: Use the ID returned when creating a template.
+      requestBody:
+        description: Fields to update.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditWhatsAppTemplate"
+            example:
+              components:
+                - type: BODY
+                  text: Updated sandbox text
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp/{version}/{phone_number_id}/whatsapp_business_profile:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/PhoneId"
+    get:
+      tags: [WhatsApp account and templates]
+      operationId: getWhatsAppProfile
+      summary: Get a WhatsApp business profile
+      parameters:
+        - $ref: "#/components/parameters/Fields"
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppProfileList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [WhatsApp account and templates]
+      operationId: updateWhatsAppProfile
+      summary: Update a WhatsApp business profile
+      requestBody:
+        description: Profile fields or a media handle for the profile photo.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWhatsAppProfile"
+            example:
+              messaging_product: whatsapp
+              about: Sandbox business profile
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp/{version}/{waba_id}/message_templates:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/WabaId"
+    get:
+      tags: [WhatsApp account and templates]
+      operationId: listWhatsAppTemplates
+      summary: List WhatsApp templates or find them by name
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+            description: Filter by exact template name.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            description: Maximum number of templates.
+            example: 25
+            minimum: 1
+            maximum: 100
+            default: 25
+        - name: before
+          in: query
+          schema:
+            type: string
+            description: Return the page before this cursor. Use one cursor per request.
+        - name: after
+          in: query
+          schema:
+            type: string
+            description: Return the page after this cursor. Use one cursor per request.
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppTemplateList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [WhatsApp account and templates]
+      operationId: createWhatsAppTemplate
+      summary: Create a WhatsApp template
+      requestBody:
+        description: Template and its components.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWhatsAppTemplate"
+            example:
+              name: sandbox_order
+              language: en
+              category: UTILITY
+              components:
+                - type: BODY
+                  text: Your sandbox order is ready.
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppTemplateCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [WhatsApp account and templates]
+      operationId: deleteWhatsAppTemplate
+      summary: Delete a WhatsApp template by name or ID
+      description: "Specify at least one of name and hsm_id. If both are supplied, the same template must match both."
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+            description: Exact template name.
+        - name: hsm_id
+          in: query
+          schema:
+            type: string
+            description: Meta template ID.
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp/{version}/{phone_number_id}/media:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/PhoneId"
+    post:
+      tags: [WhatsApp media and QR]
+      operationId: uploadWhatsAppMedia
+      summary: Upload WhatsApp media
+      requestBody:
+        description: Choose a file of up to 16 MB and provide its MIME type.
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/WhatsAppMediaUpload"
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppMediaReference"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp/{version}/{phone_number_id}/media_handle:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/PhoneId"
+    post:
+      tags: [WhatsApp media and QR]
+      operationId: createWhatsAppMediaHandle
+      summary: Upload a file and create a WhatsApp media handle
+      requestBody:
+        description: Choose a file of up to 16 MB and provide its MIME type.
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/WhatsAppMediaUpload"
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppMediaHandle"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp/{version}/{phone_number_id}/media/{media_id}:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/PhoneId"
+      - $ref: "#/components/parameters/MediaId"
+    get:
+      tags: [WhatsApp media and QR]
+      operationId: getWhatsAppMedia
+      summary: Get WhatsApp media metadata and download URL
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppMediaInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /dev/whatsapp/{version}/{phone_number_id}/media/{media_id}/file:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/PhoneId"
+      - $ref: "#/components/parameters/MediaId"
+    get:
+      tags: [WhatsApp media and QR]
+      operationId: downloadWhatsAppMedia
+      summary: Download the stored sandbox media
+      responses:
+        "200":
+          description: Request completed
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                description: File contents.
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /dev/whatsapp/{version}/{phone_number_id}/message_qrdls:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/PhoneId"
+    get:
+      tags: [WhatsApp media and QR]
+      operationId: listWhatsAppQr
+      summary: List WhatsApp QR records
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppQrList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [WhatsApp media and QR]
+      operationId: createWhatsAppQr
+      summary: Create a WhatsApp sandbox QR record
+      requestBody:
+        description: QR message and rendering format.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWhatsAppQr"
+            example:
+              prefilled_message: Hello from the sandbox
+              generate_qr_image: PNG
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppQr"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp/{version}/{phone_number_id}/message_qrdls/{qr_code_id}:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/PhoneId"
+      - $ref: "#/components/parameters/QrId"
+    get:
+      tags: [WhatsApp media and QR]
+      operationId: getWhatsAppQr
+      summary: Get a WhatsApp QR record
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppQrList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [WhatsApp media and QR]
+      operationId: updateWhatsAppQr
+      summary: Update a WhatsApp QR record
+      requestBody:
+        description: Updated prefilled message and optional replacement image format.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWhatsAppQr"
+            example:
+              prefilled_message: Updated sandbox message
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppQr"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [WhatsApp media and QR]
+      operationId: deleteWhatsAppQr
+      summary: Delete a WhatsApp QR record
+      responses:
+        "200":
+          $ref: "#/components/responses/Success"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/whatsapp/{version}/{phone_number_id}/message_qrdls/{qr_code_id}/image.{format}:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/PhoneId"
+      - $ref: "#/components/parameters/QrId"
+      - $ref: "#/components/parameters/ImageFormat"
+    get:
+      tags: [WhatsApp media and QR]
+      operationId: getWhatsAppQrImage
+      summary: Get a rendered sandbox QR image
+      responses:
+        "200":
+          description: PNG or SVG image for the format saved on the record.
+          content:
+            image/png:
+              schema:
+                type: string
+                description: File contents.
+                format: binary
+            "image/svg+xml":
+              schema:
+                type: string
+                description: File contents.
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /dev/whatsapp/{version}/{phone_number_id}/block_users:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/PhoneId"
+    get:
+      tags: [WhatsApp media and QR]
+      operationId: listWhatsAppBlockedUsers
+      summary: List blocked WhatsApp users
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppBlockedList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [WhatsApp media and QR]
+      operationId: blockWhatsAppUsers
+      summary: Block WhatsApp users
+      requestBody:
+        description: Users to block in the sandbox.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppBlockRequest"
+            example:
+              messaging_product: whatsapp
+              block_users:
+                - user: "+919999999999"
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppBlocked"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [WhatsApp media and QR]
+      operationId: unblockWhatsAppUsers
+      summary: Unblock WhatsApp users
+      requestBody:
+        description: Users to unblock in the sandbox.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppBlockRequest"
+            example:
+              messaging_product: whatsapp
+              block_users:
+                - user: "+919999999999"
+      responses:
+        "200":
+          $ref: "#/components/responses/WhatsAppUnblocked"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/webhook/v2/{service}:
+    parameters:
+      - $ref: "#/components/parameters/WebhookService"
+    get:
+      tags: [Webhook configuration]
+      operationId: listWebhooks
+      summary: List webhook configurations for a channel
+      responses:
+        "200":
+          $ref: "#/components/responses/WebhookList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Webhook configuration]
+      operationId: createWebhook
+      summary: Create a webhook configuration
+      description: Configurations are saved for testing. Sandbox delivery goes to the configured email inbox.
+      requestBody:
+        description: Webhook configuration.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookRequest"
+            example:
+              name: Sandbox callback
+              url: "https://example.test/webhook"
+              event: all
+              method: POST
+      responses:
+        "200":
+          $ref: "#/components/responses/WebhookSaved"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /dev/webhook/v2/{service}/{id}:
+    parameters:
+      - $ref: "#/components/parameters/WebhookService"
+      - $ref: "#/components/parameters/WebhookId"
+    put:
+      tags: [Webhook configuration]
+      operationId: replaceWebhook
+      summary: Replace a webhook configuration
+      description: Include settings you want to keep. Omitted settings revert to their defaults.
+      requestBody:
+        description: Webhook configuration.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookRequest"
+            example:
+              name: Sandbox callback
+              url: "https://example.test/webhook"
+              event: all
+              method: POST
+      responses:
+        "200":
+          $ref: "#/components/responses/WebhookSaved"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [Webhook configuration]
+      operationId: deleteWebhook
+      summary: Delete a webhook configuration
+      responses:
+        "200":
+          $ref: "#/components/responses/WebhookDeleted"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /health:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: Check sandbox application health
+      security: []
+      responses:
+        "200":
+          $ref: "#/components/responses/Health"
+components:
+  securitySchemes:
+    fast2smsKey:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Raw API key configured in FAST2SMS_API_KEYS.
+  parameters:
+    Version:
+      name: version
+      in: path
+      required: true
+      schema:
+        type: string
+        description: WhatsApp API version.
+        example: v26.0
+        pattern: "^v[0-9]+[.][0-9]+$"
+    WabaId:
+      name: waba_id
+      in: path
+      required: true
+      schema:
+        type: string
+        description: WhatsApp Business Account ID.
+        example: "100000000000001"
+    PhoneId:
+      name: phone_number_id
+      in: path
+      required: true
+      schema:
+        type: string
+        description: WhatsApp phone number ID.
+        example: "100000000000002"
+    WhatsAppObjectId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        description: "Business account, phone number, or template ID. POST takes a template ID."
+        example: "20005"
+    SmsRequestId:
+      name: request_id
+      in: path
+      required: true
+      schema:
+        type: string
+        description: Request ID from an SMS send.
+        example: S1234567890abcd
+    WhatsAppRequestId:
+      name: request_id
+      in: path
+      required: true
+      schema:
+        type: string
+        description: Request ID or Meta message ID from a WhatsApp send.
+        example: W1234567890abcd
+    MediaId:
+      name: media_id
+      in: path
+      required: true
+      schema:
+        type: string
+        description: Media ID returned by the upload route.
+        example: "100000000000003"
+    QrId:
+      name: qr_code_id
+      in: path
+      required: true
+      schema:
+        type: string
+        description: Code returned when the sandbox QR record was created.
+        example: "100000000000004"
+    ImageFormat:
+      name: format
+      in: path
+      required: true
+      schema:
+        type: string
+        description: The format chosen when creating or updating the QR record.
+        example: png
+        enum: [png, svg]
+    WebhookService:
+      name: service
+      in: path
+      required: true
+      schema:
+        type: string
+        description: Provider channel.
+        example: sms
+        enum: [sms, otp, whatsapp, rcs, voice]
+    WebhookId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        description: ID returned by webhook creation.
+        example: wh_123456
+    From:
+      name: from
+      in: query
+      required: true
+      schema:
+        type: string
+        description: "First date, inclusive, in Asia/Kolkata."
+        format: date
+    To:
+      name: to
+      in: query
+      required: true
+      schema:
+        type: string
+        description: "Last date, inclusive, in Asia/Kolkata."
+        format: date
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        description: One-based page number.
+        example: 1
+        minimum: 1
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        description: Rows per page.
+        example: 100
+        minimum: 1
+        maximum: 1000
+        default: 100
+    Fields:
+      name: fields
+      in: query
+      schema:
+        type: string
+        description: Comma-separated names of fields to return.
+  responses:
+    Unauthorized:
+      description: Missing or invalid sandbox API key.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            return: false
+            status_code: 412
+            message: "Invalid Authentication, Check Authorization Key"
+    BadRequest:
+      description: The request fields or body failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    FieldBadRequest:
+      description: The request failed validation. Field errors may identify individual inputs.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/ApiError"
+              - $ref: "#/components/schemas/FieldError"
+    NotFound:
+      description: The requested resource is unavailable for the authenticated sandbox account.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Conflict:
+      description: The write conflicted with a concurrent request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    ValidationFailed:
+      description: The date range or campaign input failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Accepted:
+      description: Saved and queued for sandbox email delivery.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Accepted"
+    SmsAccepted:
+      description: Saved and queued for sandbox email delivery.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SmsAccepted"
+    OtpSent:
+      description: Saved the code and queued a sandbox email.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OtpSent"
+    OtpVerified:
+      description: Verified the most recent code for this number.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OtpVerified"
+    Success:
+      description: The request succeeded.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Success"
+    SuccessData:
+      description: The sandbox resource was saved or read.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SuccessData"
+    DataList:
+      description: The requested sandbox resources.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DataList"
+    WhatsAppMetaAccepted:
+      description: Saved and queued. The returned Meta-style ID can be used in the WhatsApp delivery report.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppMetaAccepted"
+    VoiceCampaignAccepted:
+      description: Saved and queued for simulated voice delivery by email.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/VoiceCampaignAccepted"
+    VoiceFiles:
+      description: Approved sample voice files.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/VoiceFiles"
+    VoiceReport:
+      description: Campaign state and optional per-number results.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/VoiceReport"
+    SmsDelivery:
+      description: Delivery state derived from the sandbox email queue.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SmsDelivery"
+    SmsLogs:
+      description: Paginated sandbox delivery history.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SmsLogs"
+    SmsSummary:
+      description: Delivery counts for the requested date range.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SmsSummary"
+    WhatsAppDelivery:
+      description: Delivery state derived from the sandbox email queue.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppDelivery"
+    WhatsAppLogs:
+      description: Paginated sandbox delivery history.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppLogs"
+    WhatsAppSummary:
+      description: Delivery counts for the requested date range.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppSummary"
+    Wallet:
+      description: Configured sandbox wallet balance.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Wallet"
+    DltList:
+      description: Saved sender IDs or content templates.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DltList"
+    DltImportResult:
+      description: Accepted the workbook upload or recorded its URL.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DltImportResult"
+    WabaDetails:
+      description: Sandbox WABA details with optional templates.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WabaDetails"
+    WhatsAppTemplateList:
+      description: Matching templates and cursor paging when available.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppTemplateList"
+    WhatsAppPhoneList:
+      description: Matching phone numbers and cursor metadata.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppPhoneList"
+    WhatsAppProfileList:
+      description: Business profile data.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppProfileList"
+    WhatsAppTemplateCreated:
+      description: Stored the template with local sandbox approval.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppTemplateCreated"
+    WhatsAppObject:
+      description: "Phone, business health, or template fields for the supplied ID."
+      content:
+        application/json:
+          schema:
+            anyOf:
+              - $ref: "#/components/schemas/WhatsAppPhone"
+              - $ref: "#/components/schemas/WhatsAppHealth"
+              - $ref: "#/components/schemas/WhatsAppTemplate"
+    WhatsAppMediaReference:
+      description: Uploaded the file and returned its ID.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppMediaReference"
+    WhatsAppMediaHandle:
+      description: Uploaded the file and returned a handle.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppMediaHandle"
+    WhatsAppMediaInfo:
+      description: Stored metadata and protected download URL.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppMediaInfo"
+    WhatsAppQr:
+      description: Saved the sandbox QR record.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppQr"
+    WhatsAppQrList:
+      description: Matching sandbox QR records.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppQrList"
+    WhatsAppBlockedList:
+      description: Sandbox block list.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppBlockedList"
+    WhatsAppBlocked:
+      description: Updated the sandbox block list.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppBlocked"
+    WhatsAppUnblocked:
+      description: Removed the users from the sandbox block list.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WhatsAppUnblocked"
+    WebhookList:
+      description: Saved webhook configurations.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WebhookList"
+    WebhookSaved:
+      description: Stored the webhook configuration.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WebhookSaved"
+    WebhookDeleted:
+      description: Soft-deleted the webhook configuration.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WebhookDeleted"
+    Health:
+      description: The application is accepting requests.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Health"
+  schemas:
+    ApiError:
+      type: object
+      required: [return, status_code, message]
+      properties:
+        return:
+          type: boolean
+          example: false
+        status_code:
+          type: integer
+          description: Fast2SMS-style status code.
+          example: 400
+        message:
+          type: string
+          example: Invalid request parameters or body
+    FieldError:
+      type: object
+      required: [return, errors_keys, errors]
+      properties:
+        return:
+          type: boolean
+          example: false
+        errors_keys:
+          type: array
+          items:
+            type: string
+          example: [message_id]
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            message_id: [Invalid WhatsApp template message ID]
+    SmsDetails:
+      type: object
+      properties:
+        character_count:
+          type: integer
+          example: 18
+        per_sms_rate:
+          type: string
+          example: "0.0000"
+        sms_count:
+          type: integer
+          example: 1
+        sms_language:
+          type: string
+          enum: [english, unicode]
+        total_valid_number:
+          type: integer
+          example: 1
+        total_invalid_number:
+          type: integer
+          example: 0
+        valid_numbers:
+          type: array
+          items:
+            type: string
+        invalid_numbers:
+          type: array
+          items:
+            type: string
+        amount_debited:
+          type: string
+          example: "0.0000"
+    Accepted:
+      type: object
+      required: [return, request_id, message]
+      properties:
+        return:
+          type: boolean
+          example: true
+        request_id:
+          type: string
+          description: Use this ID to look up the sandbox delivery state.
+          example: S1234567890abcd
+        message:
+          type: array
+          items:
+            type: string
+          example: [SMS sent successfully.]
+        sms_details:
+          type: object
+          description: Present when requested. Its fields depend on the send route.
+          additionalProperties: true
+    SmsAccepted:
+      type: object
+      required: [return, request_id, message]
+      properties:
+        return:
+          type: boolean
+          example: true
+        request_id:
+          type: string
+          description: Use this ID to look up the sandbox delivery state.
+          example: S1234567890abcd
+        message:
+          type: array
+          items:
+            type: string
+          example: [SMS sent successfully.]
+        sms_details:
+          $ref: "#/components/schemas/SmsDetails"
+    OtpSent:
+      type: object
+      required: [return, status_code, request_id, message]
+      properties:
+        return:
+          type: boolean
+          example: true
+        status_code:
+          type: integer
+          example: 200
+        request_id:
+          type: string
+          example: O1234567890abcd
+        message:
+          type: string
+          example: OTP sent successfully
+    OtpVerified:
+      type: object
+      required: [return, status_code, message]
+      properties:
+        return:
+          type: boolean
+          example: true
+        status_code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: OTP verified successfully
+    Success:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          example: true
+    SuccessData:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          additionalProperties: true
+    DataList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    CursorPage:
+      type: object
+      properties:
+        cursors:
+          type: object
+          properties:
+            before:
+              type: string
+              description: Previous cursor.
+            after:
+              type: string
+              description: Next cursor.
+    QuickSmsRequest:
+      type: object
+      required: [route, numbers, message]
+      properties:
+        route:
+          type: string
+          enum: [q]
+        numbers:
+          type: string
+          description: Comma-separated Indian mobile numbers.
+          example: "9999999999"
+        message:
+          type: string
+          description: Plain SMS text.
+          example: Hello from the sandbox
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        sms_details:
+          type: string
+          description: Set to 1 to include message details.
+          example: "1"
+          enum: ["1"]
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    DltSmsRequest:
+      type: object
+      required: [route, numbers, sender_id, message]
+      properties:
+        route:
+          type: string
+          enum: [dlt]
+        numbers:
+          type: string
+          description: Comma-separated Indian mobile numbers.
+          example: "9999999999"
+        sender_id:
+          type: string
+          description: DLT sender ID.
+          example: TESTER
+        message:
+          type: string
+          description: DLT Manager message ID.
+          example: "10001"
+        variables_values:
+          type: string
+          description: Pipe-delimited template values.
+          example: "Sandbox|123456"
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        sms_details:
+          type: string
+          description: Set to 1 to include message details.
+          example: "1"
+          enum: ["1"]
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    DltManualSmsRequest:
+      type: object
+      required: [route, numbers, sender_id, message]
+      properties:
+        route:
+          type: string
+          enum: [dlt_manual]
+        numbers:
+          type: string
+          description: Comma-separated Indian mobile numbers.
+          example: "9999999999"
+        sender_id:
+          type: string
+          description: DLT sender ID.
+          example: TESTER
+        message:
+          type: string
+          description: Full DLT-approved text with values inserted.
+        entity_id:
+          type: string
+          description: DLT principal entity ID.
+        template_id:
+          type: string
+          description: DLT template ID.
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        sms_details:
+          type: string
+          description: Set to 1 to include message details.
+          example: "1"
+          enum: ["1"]
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    ClassicOtpSmsRequest:
+      type: object
+      required: [route, numbers, variables_values]
+      properties:
+        route:
+          type: string
+          enum: [otp]
+        numbers:
+          type: string
+          description: Comma-separated Indian mobile numbers.
+          example: "9999999999"
+        variables_values:
+          type: string
+          description: OTP value to send.
+          example: "123456"
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        sms_details:
+          type: string
+          description: Set to 1 to include message details.
+          example: "1"
+          enum: ["1"]
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    SmsBatchRequest:
+      type: object
+      required: [route, requests]
+      properties:
+        route:
+          type: string
+          enum: [q, dlt, dlt_manual]
+        requests:
+          type: array
+          items:
+            type: object
+            required: [numbers, message]
+            properties:
+              numbers:
+                type: string
+                description: Comma-separated Indian mobile numbers.
+                example: "9999999999"
+              message:
+                type: string
+                description: "Quick SMS text, full DLT Manual text, or the Fast2SMS DLT message ID."
+                example: Hello from the sandbox
+              sender_id:
+                type: string
+                description: DLT sender ID.
+                example: TESTER
+              entity_id:
+                type: string
+                description: DLT principal entity ID.
+              template_id:
+                type: string
+                description: DLT template ID.
+              variables_values:
+                type: string
+                description: Pipe-delimited template values.
+                example: "Sandbox|123456"
+              schedule_time:
+                type: string
+                description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+              udf1:
+                type: string
+                description: First tracking value
+              udf2:
+                type: string
+                description: Second tracking value
+              udf3:
+                type: string
+                description: Third tracking value
+          minItems: 1
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        sms_details:
+          type: string
+          description: Set to 1 to include message details.
+          example: "1"
+          enum: ["1"]
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    SendOtpRequest:
+      type: object
+      required: [mobile, otp_id]
+      properties:
+        mobile:
+          type: string
+          description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+          example: "9999999999"
+        otp_id:
+          type: string
+          description: Sandbox OTP template ID.
+          example: sandbox-otp
+        otp:
+          type: string
+          description: Optional test code. Supply a string to retain leading zeros.
+          example: "012345"
+          maxLength: 10
+        otp_length:
+          type: integer
+          description: Generated code length.
+          example: 6
+          minimum: 4
+          maximum: 10
+          default: 6
+        otp_expiry:
+          type: integer
+          description: Minutes of validity.
+          example: 15
+          minimum: 1
+          maximum: 10080
+          default: 15
+        variables_values:
+          type: string
+          description: Pipe-delimited template values.
+          example: "Sandbox|123456"
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    VerifyOtpRequest:
+      type: object
+      required: [mobile, otp]
+      properties:
+        mobile:
+          type: string
+          description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+          example: "9999999999"
+        otp:
+          type: string
+          description: Code from the sandbox email.
+          example: "012345"
+    ResendOtpRequest:
+      type: object
+      required: [mobile]
+      properties:
+        mobile:
+          type: string
+          description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+          example: "9999999999"
+    WhatsAppTemplateRequest:
+      type: object
+      required: [message_id, numbers]
+      properties:
+        message_id:
+          type: string
+          description: Numeric Fast2SMS template message ID.
+          example: "20005"
+        phone_number_id:
+          type: string
+          description: Optional sender phone number ID.
+          example: "100000000000002"
+        numbers:
+          type: string
+          description: Comma-separated Indian mobile numbers.
+          example: "9999999999"
+        variables_values:
+          type: string
+          description: Pipe-delimited template values.
+          example: "Sandbox|123456"
+        media_url:
+          type: string
+          description: HTTP or HTTPS media URL. The sandbox records it in the payload.
+        document_filename:
+          type: string
+          description: Filename for a document header.
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        sms_details:
+          type: string
+          description: Set to 1 to include message details.
+          example: "1"
+          enum: ["1"]
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    WhatsAppSessionRequest:
+      allOf:
+        - $ref: "#/components/schemas/WhatsAppSessionFields"
+        - type: object
+          properties:
+            text:
+              oneOf:
+                - type: string
+                  example: Hello from the sandbox
+                - type: object
+                  required: [body]
+                  properties:
+                    body:
+                      type: string
+                      example: Hello from the sandbox
+    WhatsAppSessionForm:
+      allOf:
+        - $ref: "#/components/schemas/WhatsAppSessionFields"
+        - type: object
+          properties:
+            text:
+              type: string
+              example: Hello from the sandbox
+    WhatsAppSessionFields:
+      type: object
+      required: [to]
+      properties:
+        phone_number_id:
+          type: string
+          description: Sender phone ID. Provide this or display_number.
+          example: "100000000000002"
+        display_number:
+          type: string
+          description: Sender display number. Provide this or phone_number_id.
+        to:
+          type: string
+          description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+          example: "9999999999"
+        type:
+          type: string
+          description: Message type. Text is used when omitted. Some types accept a nested object under the field named by type.
+          example: text
+          enum: [text, image, video, audio, document, sticker, location, reaction, interactive, contacts, catalogue, catalog, product, product_list, carousel]
+        url:
+          type: string
+          description: Media URL.
+        caption:
+          type: string
+          description: Optional media caption.
+        document_filename:
+          type: string
+          description: Required for a flat document message.
+        latitude:
+          type: number
+        longitude:
+          type: number
+        name:
+          type: string
+          description: Location name.
+        address:
+          type: string
+          description: Location address.
+        message_id:
+          type: string
+          description: Message ID for a reaction.
+        emoji:
+          type: string
+          description: Reaction emoji. An empty value clears the reaction.
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+      additionalProperties: true
+    WhatsAppDirectRequest:
+      type: object
+      required: [phone_number_id, category, text, numbers]
+      properties:
+        phone_number_id:
+          type: string
+          description: Sender phone ID.
+          example: "100000000000002"
+        category:
+          type: string
+          description: Sandbox Direct Send category.
+          example: utility
+          enum: [utility]
+        text:
+          type: string
+          description: Utility message text.
+          example: Your sandbox order is ready.
+          maxLength: 1024
+        numbers:
+          type: string
+          description: Comma-separated Indian mobile numbers.
+          example: "9999999999"
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    WhatsAppMetaText:
+      type: object
+      required: [messaging_product, to, type, text]
+      properties:
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        recipient_type:
+          type: string
+          enum: [individual]
+        to:
+          type: string
+          description: Destination number in international format.
+          example: "919999999999"
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+        type:
+          type: string
+          enum: [text]
+        text:
+          type: object
+          required: [body]
+          properties:
+            body:
+              type: string
+              description: Message body.
+              example: Hello from the sandbox
+            preview_url:
+              type: boolean
+              description: Link preview.
+    WhatsAppMetaTemplate:
+      type: object
+      required: [messaging_product, to, type, template]
+      properties:
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        recipient_type:
+          type: string
+          enum: [individual]
+        to:
+          type: string
+          description: Destination number in international format.
+          example: "919999999999"
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+        type:
+          type: string
+          enum: [template]
+        template:
+          type: object
+          required: [name, language]
+          properties:
+            name:
+              type: string
+              description: Template name.
+              example: sandbox_template
+            language:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  description: Language code.
+                  example: en
+            components:
+              type: array
+              items:
+                type: object
+                required: [type]
+                properties:
+                  type:
+                    type: string
+                    description: Component type.
+                  sub_type:
+                    type: string
+                    description: Button subtype.
+                  index:
+                    type: string
+                    description: Button index.
+                  parameters:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                additionalProperties: true
+    WhatsAppMetaAsset:
+      type: object
+      required: [messaging_product, to, type]
+      properties:
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        recipient_type:
+          type: string
+          enum: [individual]
+        to:
+          type: string
+          description: Destination number in international format.
+          example: "919999999999"
+        schedule_time:
+          type: string
+          description: "Future time in Asia/Kolkata as DD-MM-YYYY-HH-MM, or Unix seconds."
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+        type:
+          type: string
+          description: Include an object with the same name as the chosen type.
+          enum: [image, video, audio, document, sticker, location, reaction, interactive, contacts, catalogue, catalog, product, product_list, carousel]
+        image:
+          type: object
+          description: Image object with a link or media ID.
+          additionalProperties: true
+        document:
+          type: object
+          description: Document object with a link or media ID.
+          additionalProperties: true
+        interactive:
+          type: object
+          description: Meta interactive payload.
+          additionalProperties: true
+      additionalProperties: true
+    WhatsAppMetaAccepted:
+      type: object
+      required: [messaging_product, contacts, messages]
+      properties:
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        contacts:
+          type: array
+          items:
+            type: object
+            properties:
+              input:
+                type: string
+              wa_id:
+                type: string
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Sandbox Meta message ID.
+                example: wamid.W1234567890abcd
+              message_status:
+                type: string
+                enum: [accepted]
+    RcsPlain:
+      type: object
+      required: [bot_id, to, type, message]
+      properties:
+        bot_id:
+          type: string
+          description: RCS bot ID.
+          example: sandbox-bot
+        to:
+          type: string
+          description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+          example: "9999999999"
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+        type:
+          type: string
+          enum: [plain]
+        message:
+          type: string
+          description: Message text.
+          example: Hello from the sandbox
+          maxLength: 3000
+        suggestion_type:
+          type: string
+          description: Optional action type.
+          enum: [openUrl, dial, viewLocation]
+        suggestion_text:
+          type: string
+          description: Action button label.
+          maxLength: 25
+        suggestion_url:
+          type: string
+          description: HTTP or HTTPS URL for openUrl.
+        suggestion_phone:
+          type: string
+          description: International phone number for dial.
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        location_label:
+          type: string
+          description: Optional map label.
+    RcsRich:
+      type: object
+      required: [bot_id, to, type, message]
+      properties:
+        bot_id:
+          type: string
+          description: RCS bot ID.
+          example: sandbox-bot
+        to:
+          type: string
+          description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+          example: "9999999999"
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+        type:
+          type: string
+          enum: [rich]
+        title:
+          type: string
+          description: Optional title for a rich card.
+          maxLength: 100
+        message:
+          type: string
+          description: Message text.
+          example: Hello from the sandbox
+          maxLength: 3000
+        media_url:
+          type: string
+          description: HTTP or HTTPS media URL.
+          example: "https://example.test/image.png"
+        suggestion_type:
+          type: string
+          description: Optional action type.
+          enum: [openUrl, dial, viewLocation]
+        suggestion_text:
+          type: string
+          description: Action button label.
+          maxLength: 25
+        suggestion_url:
+          type: string
+          description: HTTP or HTTPS URL for openUrl.
+        suggestion_phone:
+          type: string
+          description: International phone number for dial.
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        location_label:
+          type: string
+          description: Optional map label.
+    RcsMedia:
+      type: object
+      required: [bot_id, to, type, media_url]
+      properties:
+        bot_id:
+          type: string
+          description: RCS bot ID.
+          example: sandbox-bot
+        to:
+          type: string
+          description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+          example: "9999999999"
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+        type:
+          type: string
+          enum: [media]
+        media_url:
+          type: string
+          description: HTTP or HTTPS media URL.
+          example: "https://example.test/image.png"
+    RcsCarouselCard:
+      type: object
+      required: [title, description]
+      properties:
+        title:
+          type: string
+          description: Card title.
+          maxLength: 255
+        description:
+          type: string
+          description: Card text.
+          maxLength: 2000
+        media_url:
+          type: string
+          description: HTTP or HTTPS media URL.
+          example: "https://example.test/image.png"
+        suggestion_type:
+          type: string
+          description: Optional action type.
+          enum: [openUrl, dial, viewLocation]
+        suggestion_text:
+          type: string
+          description: Action button label.
+          maxLength: 25
+        suggestion_url:
+          type: string
+          description: HTTP or HTTPS URL for openUrl.
+        suggestion_phone:
+          type: string
+          description: International phone number for dial.
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        location_label:
+          type: string
+          description: Optional map label.
+    RcsCarousel:
+      type: object
+      required: [bot_id, to, type, cards]
+      properties:
+        bot_id:
+          type: string
+          description: RCS bot ID.
+          example: sandbox-bot
+        to:
+          type: string
+          description: "Indian mobile number. An optional 91 or +91 prefix is accepted."
+          example: "9999999999"
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+        type:
+          type: string
+          enum: [carousel]
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/RcsCarouselCard"
+          minItems: 2
+          maxItems: 10
+    VoiceCampaignRequest:
+      type: object
+      required: [file_id, numbers]
+      properties:
+        file_id:
+          type: string
+          description: Positive numeric voice file ID. See the sample file list.
+          example: "30023"
+        numbers:
+          type: string
+          description: "Indian mobiles separated by commas, semicolons, or whitespace."
+          example: "9999999999,9999999998"
+        campaign_name:
+          type: string
+          description: Campaign label for the report.
+          example: Sandbox test
+        dtmf_keys:
+          type: string
+          description: Comma-separated digits for a key-press campaign.
+          example: "1,2"
+        agent_groups:
+          type: string
+          description: "Comma-separated digit:numeric-group-ID pairs for call patch."
+          example: "1:30001,2:30002"
+        no_agent_file_id:
+          type: string
+          description: Required for call patch.
+        schedule_time:
+          type: string
+          description: "Future time as YYYY-MM-DD HH:MM:SS in Asia/Kolkata, between 10 AM and 9 PM."
+        idempotency_key:
+          type: string
+          description: Reusing the same key within an account returns the first accepted response.
+          example: test-campaign-001
+          maxLength: 128
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    VoiceCampaignAccepted:
+      type: object
+      required: [return, request_id, numbers, removed, dnd, amount_held, message]
+      properties:
+        return:
+          type: boolean
+          example: true
+        request_id:
+          type: string
+          example: V1234567890abcd
+        numbers:
+          type: integer
+          description: Accepted number count.
+          example: 2
+        removed:
+          type: integer
+          description: Invalid or duplicate inputs removed.
+          example: 0
+        dnd:
+          type: integer
+          example: 0
+        amount_held:
+          type: integer
+          description: Sandbox charge.
+          example: 0
+        message:
+          type: array
+          items:
+            type: string
+    VoiceFile:
+      type: object
+      required: [file_id, name, used_as, duration, status, remarks]
+      properties:
+        file_id:
+          type: integer
+          example: 30023
+        name:
+          type: string
+          example: Sandbox simple call
+        used_as:
+          type: string
+          enum: [welcome, menu]
+        duration:
+          type: integer
+          description: Sample duration in seconds.
+          example: 15
+        status:
+          type: string
+          enum: [approved]
+        remarks:
+          type: [string, "null"]
+    VoiceFiles:
+      type: object
+      required: [return, files]
+      properties:
+        return:
+          type: boolean
+          example: true
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/VoiceFile"
+    VoiceNumberResult:
+      type: object
+      properties:
+        mobile:
+          type: string
+          example: "9999999999"
+        status:
+          type: string
+          description: Status derived from the sandbox email workflow.
+          enum: [queued, answered, failed]
+        duration:
+          type: integer
+          example: 0
+        agent_duration:
+          type: integer
+          example: 0
+        pulses:
+          type: integer
+          example: 0
+        charge:
+          type: integer
+          example: 0
+        dtmf:
+          type: [string, "null"]
+        agent_number:
+          type: [string, "null"]
+        start_time:
+          type: [string, "null"]
+        end_time:
+          type: [string, "null"]
+        reason:
+          type: string
+          example: Sandbox email queued
+    VoiceReport:
+      type: object
+      required: [return, request_id, type, status, completed]
+      properties:
+        return:
+          type: boolean
+          example: true
+        request_id:
+          type: string
+          example: V1234567890abcd
+        campaign_name:
+          type: string
+        type:
+          type: string
+          enum: [simple, dtmf, callpatch]
+        status:
+          type: string
+          enum: [scheduled, submitting, completed, failed]
+        schedule_time:
+          type: string
+        numbers:
+          type: integer
+        dialled:
+          type: integer
+        answered:
+          type: integer
+        pulses:
+          type: integer
+        amount_held:
+          type: integer
+        amount_charged:
+          type: [integer, "null"]
+        amount_refunded:
+          type: [integer, "null"]
+        completed:
+          type: boolean
+        page:
+          type: integer
+          description: "Present when numbers=1."
+        last_page:
+          type: integer
+          description: "Present when numbers=1."
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/VoiceNumberResult"
+    Wallet:
+      type: object
+      required: [return, wallet, sms_count]
+      properties:
+        return:
+          type: boolean
+          example: true
+        wallet:
+          type: string
+          description: Sandbox balance in INR.
+          example: "1000.0000"
+        sms_count:
+          type: integer
+          description: Approximate DLT SMS count.
+          example: 4000
+    SmsDeliveryStatus:
+      type: object
+      properties:
+        mobile:
+          type: integer
+          example: 9999999999
+          format: int64
+        sender_id:
+          type: string
+        status:
+          type: string
+          enum: [Pending, Sent, Failed]
+        status_description:
+          type: string
+        sms_count:
+          type: integer
+        sms_language:
+          type: string
+          enum: [english, unicode]
+        character_count:
+          type: integer
+        dlr_attempt:
+          type: integer
+        amount_debited:
+          type: string
+          example: "0.0000"
+        sent_timestamp:
+          type: integer
+          description: "Unix seconds, present after SMTP accepts the email."
+          format: int64
+        sent_time:
+          type: string
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    SmsDeliveryCampaign:
+      type: object
+      required: [request_id, route, delivery_status]
+      properties:
+        request_id:
+          type: string
+        route:
+          type: string
+          enum: [q, dlt, dlt_manual, otp]
+        delivery_status:
+          type: array
+          items:
+            $ref: "#/components/schemas/SmsDeliveryStatus"
+    WhatsAppDeliveryStatus:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [status_update]
+        fast2sms_request_id:
+          type: string
+        request_id:
+          type: string
+          description: Meta-style message ID.
+        phone_number_id:
+          type: string
+        recipient_id:
+          type: string
+        mobile:
+          type: integer
+          example: 919999999999
+          format: int64
+        status:
+          type: string
+          enum: [pending, sent, failed]
+        status_description:
+          type: string
+        errors:
+          type: [array, "null"]
+          items:
+            type: string
+        amount_debited:
+          type: string
+          example: "0.0000"
+        category:
+          type: string
+        sent_time:
+          type: string
+        udf1:
+          type: string
+          description: First tracking value
+        udf2:
+          type: string
+          description: Second tracking value
+        udf3:
+          type: string
+          description: Third tracking value
+    Pagination:
+      type: object
+      required: [page, limit, total, total_pages]
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 100
+        total:
+          type: integer
+          example: 0
+        total_pages:
+          type: integer
+          example: 0
+    SmsDelivery:
+      type: object
+      required: [success, message, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SmsDeliveryCampaign"
+    SmsLogs:
+      type: object
+      required: [success, message, data, pagination]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SmsDeliveryCampaign"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    SmsSummary:
+      type: object
+      required: [success, message, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+          required: [sent, delivered, pending, failed, blocked, error]
+          properties:
+            sent:
+              type: integer
+              example: 0
+              minimum: 0
+            delivered:
+              type: integer
+              example: 0
+              minimum: 0
+            pending:
+              type: integer
+              example: 0
+              minimum: 0
+            failed:
+              type: integer
+              example: 0
+              minimum: 0
+            blocked:
+              type: integer
+              example: 0
+              minimum: 0
+            error:
+              type: integer
+              example: 0
+              minimum: 0
+    WhatsAppDelivery:
+      type: object
+      required: [success, message, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppDeliveryStatus"
+    WhatsAppLogs:
+      type: object
+      required: [success, message, data, pagination]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppDeliveryStatus"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    WhatsAppSummary:
+      type: object
+      required: [success, message, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+          required: [sent, accepted, delivered, read, failed, rejected, pending]
+          properties:
+            sent:
+              type: integer
+              example: 0
+              minimum: 0
+            accepted:
+              type: integer
+              example: 0
+              minimum: 0
+            delivered:
+              type: integer
+              example: 0
+              minimum: 0
+            read:
+              type: integer
+              example: 0
+              minimum: 0
+            failed:
+              type: integer
+              example: 0
+              minimum: 0
+            rejected:
+              type: integer
+              example: 0
+              minimum: 0
+            pending:
+              type: integer
+              example: 0
+              minimum: 0
+    DltEntity:
+      type: object
+      required: [entity_id]
+      properties:
+        entity_id:
+          type: string
+          description: DLT principal entity ID.
+          example: "2001002001"
+        entity_name:
+          type: string
+          description: Registered entity name.
+          example: Sandbox Business
+        screenshot:
+          type: array
+          items:
+            type: string
+            description: Approval screenshot URL.
+      additionalProperties: true
+    DltSender:
+      type: object
+      required: [entity_id, sender_id]
+      properties:
+        entity_id:
+          type: string
+          description: DLT principal entity ID.
+          example: "2001002001"
+        sender_id:
+          type: string
+          description: DLT sender ID.
+          example: TESTER
+        screenshot:
+          type: array
+          items:
+            type: string
+            description: Approval screenshot URL.
+      additionalProperties: true
+    DltTemplate:
+      type: object
+      required: [entity_id, template_id, message_text]
+      properties:
+        entity_id:
+          type: string
+          description: DLT principal entity ID.
+          example: "2001002001"
+        sender_id:
+          oneOf:
+            - type: string
+              description: DLT sender ID.
+              example: TESTER
+            - type: array
+              items:
+                type: string
+                description: DLT sender ID.
+                example: TESTER
+        template_id:
+          type: string
+          description: DLT content template ID.
+          example: "2001003001"
+        message_text:
+          type: string
+          description: "Approved template text. Use {#var#} for a variable."
+          example: "Order {#var#} is ready."
+        template_type:
+          type: string
+          description: DLT template category.
+        screenshot:
+          type: array
+          items:
+            type: string
+            description: Approval screenshot URL.
+        message_id:
+          type: string
+          description: Generated Fast2SMS-style message ID.
+      additionalProperties: true
+    DltList:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            anyOf:
+              - $ref: "#/components/schemas/DltSender"
+              - $ref: "#/components/schemas/DltTemplate"
+    DltFileUpload:
+      type: object
+      required: [entity_id, file]
+      properties:
+        entity_id:
+          type: string
+          description: DLT principal entity ID.
+          example: "2001002001"
+        file:
+          type: string
+          description: File contents.
+          format: binary
+    DltImportResult:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          required: [id, entity_id, source, status, imported]
+          properties:
+            id:
+              type: string
+            entity_id:
+              type: string
+              description: DLT principal entity ID.
+              example: "2001002001"
+            source:
+              type: string
+            status:
+              type: string
+              enum: [recorded, imported]
+            imported:
+              type: integer
+              description: Rows added.
+              example: 1
+    DltSenderImport:
+      type: object
+      required: [entity_id, sender_excel]
+      properties:
+        entity_id:
+          type: string
+          description: DLT principal entity ID.
+          example: "2001002001"
+        sender_excel:
+          type: string
+          description: Full hosted workbook URL.
+          example: "https://fixtures.example.test/dlt/sender.xlsx"
+          format: uri
+    DltTemplateImport:
+      type: object
+      required: [entity_id, content_excel]
+      properties:
+        entity_id:
+          type: string
+          description: DLT principal entity ID.
+          example: "2001002001"
+        content_excel:
+          type: string
+          description: Full hosted workbook URL.
+          example: "https://fixtures.example.test/dlt/template.xlsx"
+          format: uri
+    WhatsAppPhone:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "100000000000002"
+        verified_name:
+          type: string
+          example: Sandbox Business
+        display_phone_number:
+          type: string
+          example: "+919000000001"
+        quality_rating:
+          type: string
+        name_status:
+          type: string
+        platform_type:
+          type: string
+        code_verification_status:
+          type: string
+        is_official_business_account:
+          type: boolean
+        account_mode:
+          type: string
+    WhatsAppTemplateComponent:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          description: Template component kind.
+          example: BODY
+        format:
+          type: string
+          description: Optional header format.
+        text:
+          type: string
+          description: Component text.
+        example:
+          type: object
+          additionalProperties: true
+        buttons:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      additionalProperties: true
+    CreateWhatsAppTemplate:
+      type: object
+      required: [name, language, category, components]
+      properties:
+        name:
+          type: string
+          description: Template name.
+          example: sandbox_template
+        language:
+          type: string
+          description: Language code.
+          example: en
+        category:
+          type: string
+          description: WhatsApp template category.
+          example: UTILITY
+        components:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppTemplateComponent"
+          minItems: 1
+        parameter_format:
+          type: string
+          description: Optional parameter format.
+      additionalProperties: true
+    EditWhatsAppTemplate:
+      type: object
+      properties:
+        category:
+          type: string
+          description: WhatsApp template category.
+          example: UTILITY
+        components:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppTemplateComponent"
+          minItems: 1
+        parameter_format:
+          type: string
+          description: Optional parameter format.
+      additionalProperties: true
+    WhatsAppTemplate:
+      type: object
+      required: [id, name, language, category, status]
+      properties:
+        id:
+          type: string
+          description: Meta template ID.
+          example: "20005"
+        message_id:
+          type: integer
+          description: Simple send message ID.
+          example: 20005
+          format: int64
+        status:
+          type: string
+          example: APPROVED
+        name:
+          type: string
+          description: Template name.
+          example: sandbox_template
+        language:
+          type: string
+          description: Language code.
+          example: en
+        category:
+          type: string
+          description: WhatsApp template category.
+          example: UTILITY
+        components:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppTemplateComponent"
+          minItems: 1
+        parameter_format:
+          type: string
+          description: Optional parameter format.
+    WhatsAppTemplateCreated:
+      type: object
+      required: [id, status, category]
+      properties:
+        id:
+          type: string
+          description: Sandbox template ID.
+        status:
+          type: string
+          example: APPROVED
+        category:
+          type: string
+          description: WhatsApp template category.
+          example: UTILITY
+    WhatsAppTemplateList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppTemplate"
+        paging:
+          $ref: "#/components/schemas/CursorPage"
+    WhatsAppPhoneList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppPhone"
+        paging:
+          $ref: "#/components/schemas/CursorPage"
+    WhatsAppHealth:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        health_status:
+          type: object
+          properties:
+            can_send_message:
+              type: string
+              example: AVAILABLE
+            entities:
+              type: array
+              items:
+                type: object
+                properties:
+                  entity_type:
+                    type: string
+                    example: WABA
+                  id:
+                    type: string
+                  can_send_message:
+                    type: string
+    WabaDetails:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              waba_id:
+                type: string
+                example: "100000000000001"
+              phone_number_id:
+                type: string
+                example: "100000000000002"
+              number:
+                type: string
+              verified_name:
+                type: string
+              name_status:
+                type: string
+              quality_rating:
+                type: string
+              platform_type:
+                type: string
+              messaging_limit:
+                type: string
+              connection_status:
+                type: string
+              templates:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    message_id:
+                      type: integer
+                    template_id:
+                      type: string
+                    template_name:
+                      type: string
+                    phone_number_id:
+                      type: string
+                    sender_number:
+                      type: string
+                    status:
+                      type: string
+                    category:
+                      type: string
+                    language:
+                      type: string
+                    components:
+                      type: array
+                      items:
+                        type: object
+                        additionalProperties: true
+    WhatsAppProfile:
+      type: object
+      properties:
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        about:
+          type: string
+        address:
+          type: string
+        description:
+          type: string
+        vertical:
+          type: string
+        email:
+          type: string
+          description: Profile contact email.
+        websites:
+          type: array
+          items:
+            type: string
+            description: Profile website URL.
+        profile_picture_url:
+          type: string
+          description: Protected local URL for uploaded profile media.
+      additionalProperties: true
+    UpdateWhatsAppProfile:
+      type: object
+      properties:
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        about:
+          type: string
+        address:
+          type: string
+        description:
+          type: string
+        vertical:
+          type: string
+        email:
+          type: string
+          description: Profile contact email.
+        websites:
+          type: array
+          items:
+            type: string
+            description: Profile website URL.
+        profile_picture_handle:
+          type: string
+          description: Handle from the sandbox media_handle route.
+      additionalProperties: true
+    WhatsAppProfileList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppProfile"
+    WhatsAppMediaUpload:
+      type: object
+      required: [file, messaging_product, type]
+      properties:
+        file:
+          type: string
+          description: File contents.
+          format: binary
+        messaging_product:
+          type: string
+          description: Messaging product.
+          example: whatsapp
+          enum: [whatsapp]
+        type:
+          type: string
+          description: Multipart MIME type of the media.
+          example: image/png
+    WhatsAppMediaReference:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          description: Sandbox media ID.
+          example: "100000000000003"
+    WhatsAppMediaHandle:
+      type: object
+      required: [h]
+      properties:
+        h:
+          type: string
+          description: Sandbox media handle for templates or a profile photo.
+          example: "2:sampleHandle"
+    WhatsAppMediaInfo:
+      type: object
+      required: [id, mime_type, file_size, sha256, messaging_product, url]
+      properties:
+        id:
+          type: string
+        mime_type:
+          type: string
+          example: image/png
+        file_size:
+          type: integer
+          description: Number of bytes.
+        sha256:
+          type: string
+          description: SHA-256 checksum.
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        url:
+          type: string
+          description: Protected URL to download the stored bytes.
+          format: uri
+    CreateWhatsAppQr:
+      type: object
+      required: [prefilled_message, generate_qr_image]
+      properties:
+        prefilled_message:
+          type: string
+          description: Text associated with the QR code.
+          example: Hello from the sandbox
+        generate_qr_image:
+          type: string
+          description: Image format.
+          example: PNG
+          enum: [PNG, SVG]
+    UpdateWhatsAppQr:
+      type: object
+      required: [prefilled_message]
+      properties:
+        prefilled_message:
+          type: string
+          description: Text associated with the QR code.
+          example: Hello from the sandbox
+        generate_qr_image:
+          type: string
+          description: Image format.
+          example: PNG
+          enum: [PNG, SVG]
+    WhatsAppQr:
+      type: object
+      required: [code, prefilled_message, deep_link_url, qr_image_url]
+      properties:
+        code:
+          type: string
+          description: Sandbox QR code.
+        prefilled_message:
+          type: string
+          description: Text associated with the QR code.
+          example: Hello from the sandbox
+        deep_link_url:
+          type: string
+          description: Protected sandbox record URL.
+        qr_image_url:
+          type: string
+          description: Protected URL for the rendered image.
+    WhatsAppQrList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppQr"
+    WhatsAppBlockedUser:
+      type: object
+      required: [input, wa_id]
+      properties:
+        input:
+          type: string
+          description: Phone number supplied as input.
+        wa_id:
+          type: string
+          description: Normalized WhatsApp ID.
+    WhatsAppBlockRequest:
+      type: object
+      required: [messaging_product, block_users]
+      properties:
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        block_users:
+          type: array
+          items:
+            type: object
+            required: [user]
+            properties:
+              user:
+                type: string
+                description: International phone number.
+                example: "+919999999999"
+          minItems: 1
+    WhatsAppBlockedList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [block_users]
+            properties:
+              block_users:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WhatsAppBlockedUser"
+    WhatsAppBlocked:
+      type: object
+      required: [messaging_product, block_users]
+      properties:
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        block_users:
+          type: object
+          required: [added_users]
+          properties:
+            added_users:
+              type: array
+              items:
+                $ref: "#/components/schemas/WhatsAppBlockedUser"
+    WhatsAppUnblocked:
+      type: object
+      required: [messaging_product, block_users]
+      properties:
+        messaging_product:
+          type: string
+          enum: [whatsapp]
+        block_users:
+          type: object
+          required: [removed_users]
+          properties:
+            removed_users:
+              type: array
+              items:
+                $ref: "#/components/schemas/WhatsAppBlockedUser"
+    WebhookRequest:
+      type: object
+      required: [name, url]
+      properties:
+        name:
+          type: string
+          description: Configuration label.
+          example: Sandbox callback
+        url:
+          type: string
+          description: Callback URL recorded in the sandbox.
+          example: "https://example.test/webhook"
+          format: uri
+        method:
+          type: string
+          description: Callback method. Defaults to POST.
+          example: POST
+          enum: [POST, GET, PUT]
+        content_type:
+          type: string
+          description: Callback content type. Defaults to application/json.
+          example: application/json
+        event:
+          type: string
+          description: Event filter. Defaults to all.
+          example: all
+        status:
+          type: string
+          description: Defaults to active.
+          example: active
+          enum: [active, inactive]
+        template:
+          type: string
+          description: Callback template name. Defaults to custom.
+          example: custom
+        payload_type:
+          type: string
+          description: Defaults to SIMPLIFIED.
+          example: SIMPLIFIED
+        payload_transform:
+          type: string
+          description: Defaults to standard.
+          example: standard
+        identity_id:
+          type: string
+          description: Optional entity or bot filter.
+        header_key:
+          type: array
+          items:
+            type: string
+            description: Custom header name.
+        header_value:
+          type: array
+          items:
+            type: string
+            description: Custom header value.
+        payload:
+          oneOf:
+            - type: string
+              description: Callback template as text.
+            - type: object
+              additionalProperties: true
+      additionalProperties: true
+    WebhookConfiguration:
+      type: object
+      required: [id, service, name, url]
+      properties:
+        id:
+          type: string
+          example: wh_123456
+        service:
+          type: string
+          enum: [sms, otp, whatsapp, rcs, voice]
+        name:
+          type: string
+          description: Configuration label.
+          example: Sandbox callback
+        url:
+          type: string
+          description: Callback URL recorded in the sandbox.
+          example: "https://example.test/webhook"
+          format: uri
+        method:
+          type: string
+          description: Callback method. Defaults to POST.
+          example: POST
+          enum: [POST, GET, PUT]
+        content_type:
+          type: string
+          description: Callback content type. Defaults to application/json.
+          example: application/json
+        event:
+          type: string
+          description: Event filter. Defaults to all.
+          example: all
+        status:
+          type: string
+          description: Defaults to active.
+          example: active
+          enum: [active, inactive]
+        template:
+          type: string
+          description: Callback template name. Defaults to custom.
+          example: custom
+        payload_type:
+          type: string
+          description: Defaults to SIMPLIFIED.
+          example: SIMPLIFIED
+        payload_transform:
+          type: string
+          description: Defaults to standard.
+          example: standard
+        identity_id:
+          type: string
+          description: Optional entity or bot filter.
+        header_key:
+          type: array
+          items:
+            type: string
+            description: Custom header name.
+        header_value:
+          type: array
+          items:
+            type: string
+            description: Custom header value.
+        payload:
+          oneOf:
+            - type: string
+              description: Callback template as text.
+            - type: object
+              additionalProperties: true
+      additionalProperties: true
+    WebhookList:
+      type: object
+      required: [return, data]
+      properties:
+        return:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebhookConfiguration"
+    WebhookSaved:
+      type: object
+      required: [return, message, data]
+      properties:
+        return:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/WebhookConfiguration"
+    WebhookDeleted:
+      type: object
+      required: [return, message]
+      properties:
+        return:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Webhook deleted successfully
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: Application health marker.
+          example: UP
+          enum: [UP]

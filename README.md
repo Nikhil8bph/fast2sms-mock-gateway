@@ -45,7 +45,7 @@ docker build -t fast2sms-mock-gateway .
 docker run --rm --env-file .env -p 127.0.0.1:8080:10000 fast2sms-mock-gateway
 ```
 
-Use `http://localhost:8080` as your client's sandbox base URL. The health endpoint is `/health` and the API explorer is `/swagger-ui.html`.
+Use `http://localhost:8080` as your client's sandbox base URL. The health endpoint is `/health`.
 
 ```sh
 curl -G 'http://localhost:8080/dev/bulkV2' \
@@ -63,6 +63,12 @@ curl 'http://localhost:8080/dev/whatsapp' \
 ```
 
 Set `SANDBOX_KEY` in your shell to one configured key before running these examples. On PowerShell, use `curl.exe` and `$env:SANDBOX_KEY`.
+
+## Swagger and OpenAPI
+
+Open `/swagger-ui.html` on the running sandbox. Select **Authorize**, paste one value from `FAST2SMS_API_KEYS`, and use **Try it out** with test data. Successful sends can queue real email to `EMAIL_TO`.
+
+The running service publishes OpenAPI at `/v3/api-docs` (JSON) and `/v3/api-docs.yaml` (YAML). The [contract source](src/main/resources/openapi/fast2sms-sandbox.yaml) includes request and response schemas, sample payloads, upload fields, and the sandbox error envelopes.
 
 ## API coverage
 
