@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: fast2sms-mock-gateway
+  config:
+    import: "optional:file:./.env[.properties]"
+  datasource:
+    url: "jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslMode=${DB_SSL_MODE:REQUIRED}&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true"
+    username: "${DB_USERNAME}"
+    password: "${DB_PASSWORD}"
+    hikari:
+      maximum-pool-size: 5
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  servlet:
+    multipart:
+      max-file-size: 16MB
+      max-request-size: 17MB
+  mvc:
+    problemdetails:
+      enabled: false
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: "${EMAIL_FROM}"
+    password: "${GMAIL_APP_PASSWORD}"
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.ssl.checkserveridentity: true
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+
+server:
+  address: 0.0.0.0
+  port: "${PORT:8080}"
+  shutdown: graceful
+
+sandbox:
+  api-keys: "${FAST2SMS_API_KEYS:}"
+  email-from: "${EMAIL_FROM:}"
+  email-to: "${EMAIL_TO:}"
+  mail-password: "${GMAIL_APP_PASSWORD:}"
+  wallet-balance: "${MOCK_WALLET_BALANCE:1000.00}"
+  dlt-excel-origin: "${DLT_EXCEL_ORIGIN:}"
+  otp-verify-attempts: "${OTP_VERIFY_ATTEMPTS:10}"
+  otp-resend-wait-seconds: "${OTP_RESEND_WAIT_SECONDS:10}"

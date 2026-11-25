@@ -1,0 +1,16 @@
+Local Development License
+
+Permission is granted to use, copy, and modify the original project code solely
+for local development and testing. Production use, deployment as a hosted
+service, and redistribution require separate written permission from the
+applicable copyright holders. All other rights are reserved.
+
+This project is an independent Spring Boot test sandbox. FastAPI support and
+replacement of FastAPI or the official Fast2SMS service are outside the scope
+of this project. References to Fast2SMS describe the API behavior simulated
+for local testing and imply no affiliation or endorsement.
+
+Third-party components remain subject to their respective license terms.
+
+The project is provided as is, without warranties of any kind, to the extent
+permitted by applicable law.

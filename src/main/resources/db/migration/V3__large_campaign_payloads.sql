@@ -1,0 +1,2 @@
+ALTER TABLE sandbox_api_call MODIFY COLUMN payload LONGTEXT NOT NULL;
+ALTER TABLE sandbox_api_call MODIFY COLUMN recipients LONGTEXT NOT NULL;
